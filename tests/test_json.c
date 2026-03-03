@@ -98,8 +98,63 @@ static void test_json_roundtrip(void)
     nm_graph_destroy(g);
 }
 
+static void test_json_deserialize(void)
+{
+    /* Serialize a sample graph, then deserialize, and compare */
+    nm_graph_t *g1 = mock_build_sample_graph();
+    cJSON *json = nm_json_serialize(g1);
+
+    nm_graph_t *g2 = nm_json_deserialize(json);
+    TEST_ASSERT(g2 != NULL, "deserialize returns non-null");
+    TEST_ASSERT_EQ(g2->host_count, g1->host_count,
+                   "deserialized host count matches");
+    TEST_ASSERT_EQ(g2->edge_count, g1->edge_count,
+                   "deserialized edge count matches");
+
+    /* Spot-check host 0 */
+    TEST_ASSERT(strcmp(g2->hosts[0].display_name,
+                       g1->hosts[0].display_name) == 0,
+                "host 0 display_name preserved");
+    TEST_ASSERT_EQ(g2->hosts[0].type, g1->hosts[0].type,
+                   "host 0 type preserved");
+    TEST_ASSERT_EQ(g2->hosts[0].has_ipv4, g1->hosts[0].has_ipv4,
+                   "host 0 has_ipv4 preserved");
+
+    /* Spot-check server host (index 4) services */
+    TEST_ASSERT_EQ(g2->hosts[4].service_count, g1->hosts[4].service_count,
+                   "server service_count preserved");
+    TEST_ASSERT(strcmp(g2->hosts[4].os_name, g1->hosts[4].os_name) == 0,
+                "server os_name preserved");
+
+    /* Spot-check edge 0 */
+    TEST_ASSERT_EQ(g2->edges[0].src_id, g1->edges[0].src_id,
+                   "edge 0 src_id preserved");
+    TEST_ASSERT_EQ(g2->edges[0].dst_id, g1->edges[0].dst_id,
+                   "edge 0 dst_id preserved");
+    TEST_ASSERT_EQ(g2->edges[0].type, g1->edges[0].type,
+                   "edge 0 type preserved");
+
+    /* Check boundary host preserved */
+    TEST_ASSERT_EQ(g2->hosts[7].is_boundary, 1,
+                   "boundary host is_boundary preserved");
+    TEST_ASSERT_EQ(g2->hosts[7].type, NM_HOST_BOUNDARY,
+                   "boundary host type preserved");
+
+    cJSON_Delete(json);
+    nm_graph_destroy(g1);
+    nm_graph_destroy(g2);
+}
+
+static void test_json_deserialize_null(void)
+{
+    nm_graph_t *g = nm_json_deserialize(NULL);
+    TEST_ASSERT(g == NULL, "deserialize NULL returns NULL");
+}
+
 void test_json_suite(void)
 {
     test_json_serialize();
     test_json_roundtrip();
+    test_json_deserialize();
+    test_json_deserialize_null();
 }

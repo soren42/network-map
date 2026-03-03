@@ -118,6 +118,25 @@ static void test_cli_combined(void)
     TEST_ASSERT_STR(cfg.boundary_host, "10.0.0.1", "boundary host");
 }
 
+static void test_cli_from_json(void)
+{
+    nm_config_t cfg;
+    char *argv[] = {"prog", "--from-json", "scan.json", "-o", "png"};
+    int rc = nm_cli_parse(&cfg, 5, argv);
+    TEST_ASSERT_EQ(rc, 0, "parse --from-json ok");
+    TEST_ASSERT(cfg.load_from_json, "load_from_json set");
+    TEST_ASSERT_STR(cfg.json_input_path, "scan.json", "json_input_path");
+    TEST_ASSERT(cfg.output_flags & NM_OUT_PNG, "png output");
+}
+
+static void test_cli_from_json_default(void)
+{
+    nm_config_t cfg;
+    nm_cli_defaults(&cfg);
+    TEST_ASSERT(!cfg.load_from_json, "load_from_json default is 0");
+    TEST_ASSERT_EQ(cfg.json_input_path[0], '\0', "json_input_path default empty");
+}
+
 void test_cli_suite(void)
 {
     test_cli_defaults();
@@ -129,4 +148,6 @@ void test_cli_suite(void)
     test_cli_no_nmap();
     test_cli_fast();
     test_cli_combined();
+    test_cli_from_json();
+    test_cli_from_json_default();
 }

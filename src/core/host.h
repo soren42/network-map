@@ -73,5 +73,6 @@ void nm_host_classify(nm_host_t *h);
 void nm_host_compute_display_name(nm_host_t *h);
 const char *nm_host_ipv4_str(const nm_host_t *h);
 const char *nm_host_type_str(nm_host_type_t type);
+nm_host_type_t nm_host_type_from_str(const char *str);
 
 #endif /* NM_HOST_H */

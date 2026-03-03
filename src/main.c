@@ -3,6 +3,7 @@
 #include "log.h"
 #include "core/scan.h"
 #include "core/graph.h"
+#include "core/json_out.h"
 #include "output/out_json.h"
 #include "output/out_html.h"
 #include "output/out_text.h"
@@ -32,13 +33,24 @@ int main(int argc, char **argv)
     nm_log_set_level(cfg.verbosity);
     LOG_INFO("network-map %s starting", NM_VERSION);
 
-    nm_graph_t *g = nm_scan_run(&cfg);
-    if (!g) {
-        LOG_ERROR("Discovery failed");
-        return 1;
-    }
+    nm_graph_t *g = NULL;
 
-    LOG_INFO("Discovered %d hosts, %d edges", g->host_count, g->edge_count);
+    if (cfg.load_from_json) {
+        g = nm_json_load_file(cfg.json_input_path);
+        if (!g) {
+            LOG_ERROR("Failed to load graph from '%s'", cfg.json_input_path);
+            return 1;
+        }
+        LOG_INFO("Loaded %d hosts, %d edges from %s",
+                 g->host_count, g->edge_count, cfg.json_input_path);
+    } else {
+        g = nm_scan_run(&cfg);
+        if (!g) {
+            LOG_ERROR("Discovery failed");
+            return 1;
+        }
+        LOG_INFO("Discovered %d hosts, %d edges", g->host_count, g->edge_count);
+    }
 
     int mst_edges = nm_graph_kruskal_mst(g);
     LOG_INFO("MST: %d edges", mst_edges);

@@ -328,3 +328,16 @@ const char *nm_host_type_str(nm_host_type_t type)
     }
     return "unknown";
 }
+
+nm_host_type_t nm_host_type_from_str(const char *str)
+{
+    if (!str) return NM_HOST_WORKSTATION;
+    if (strcmp(str, "local") == 0)       return NM_HOST_LOCAL;
+    if (strcmp(str, "gateway") == 0)     return NM_HOST_GATEWAY;
+    if (strcmp(str, "server") == 0)      return NM_HOST_SERVER;
+    if (strcmp(str, "workstation") == 0) return NM_HOST_WORKSTATION;
+    if (strcmp(str, "printer") == 0)     return NM_HOST_PRINTER;
+    if (strcmp(str, "iot") == 0)         return NM_HOST_IOT;
+    if (strcmp(str, "boundary") == 0)    return NM_HOST_BOUNDARY;
+    return NM_HOST_WORKSTATION;
+}

@@ -1,4 +1,5 @@
 #include "core/edge.h"
+#include <string.h>
 
 void nm_edge_init(nm_edge_t *e, int src, int dst, double weight,
                   nm_edge_type_t type)
@@ -18,4 +19,13 @@ const char *nm_edge_type_str(nm_edge_type_t type)
         case NM_EDGE_GATEWAY: return "gateway";
     }
     return "unknown";
+}
+
+nm_edge_type_t nm_edge_type_from_str(const char *str)
+{
+    if (!str) return NM_EDGE_LAN;
+    if (strcmp(str, "lan") == 0)     return NM_EDGE_LAN;
+    if (strcmp(str, "route") == 0)   return NM_EDGE_ROUTE;
+    if (strcmp(str, "gateway") == 0) return NM_EDGE_GATEWAY;
+    return NM_EDGE_LAN;
 }

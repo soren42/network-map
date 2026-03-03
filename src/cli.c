@@ -56,6 +56,7 @@ void nm_cli_usage(const char *prog)
         "  --no-nmap            Disable nmap service scanning\n"
         "  --fast               Fast mode (reduce timeouts, skip slow probes)\n"
         "  -n, --nameserver IP  Use custom DNS server for reverse lookups\n"
+        "  --from-json FILE     Re-render outputs from a previously exported JSON file\n"
         "  -h, --help           Show this help\n"
         "  --version            Show version\n"
         "\n"
@@ -76,6 +77,7 @@ int nm_cli_parse(nm_config_t *cfg, int argc, char **argv)
         {"no-nmap",     no_argument,       NULL, 'N'},
         {"fast",        no_argument,       NULL, 'F'},
         {"nameserver",  required_argument, NULL, 'n'},
+        {"from-json",   required_argument, NULL, 'J'},
         {"help",        no_argument,       NULL, 'h'},
         {"version",     no_argument,       NULL, 'V'},
         {NULL, 0, NULL, 0}
@@ -123,6 +125,11 @@ int nm_cli_parse(nm_config_t *cfg, int argc, char **argv)
             break;
         case 'n':
             strncpy(cfg->nameserver, optarg, sizeof(cfg->nameserver) - 1);
+            break;
+        case 'J':
+            strncpy(cfg->json_input_path, optarg,
+                    sizeof(cfg->json_input_path) - 1);
+            cfg->load_from_json = 1;
             break;
         case 'h':
             nm_cli_usage(argv[0]);

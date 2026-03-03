@@ -24,6 +24,8 @@ typedef struct {
     int              no_nmap;
     int              fast_mode;
     char             nameserver[64];
+    char             json_input_path[256];
+    int              load_from_json;
 } nm_config_t;
 
 int nm_cli_parse(nm_config_t *cfg, int argc, char **argv);

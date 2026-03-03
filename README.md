@@ -58,6 +58,7 @@ Options:
   --no-nmap            Disable nmap service scanning
   --fast               Fast mode (reduce timeouts, skip slow probes)
   -n, --nameserver IP  Use custom DNS server for reverse lookups
+  --from-json FILE     Re-render outputs from a previously exported JSON file
   -h, --help           Show this help
   --version            Show version
 
@@ -82,6 +83,9 @@ sudo ./bin/network-map -n 10.0.0.253 10.0.0.1
 
 # Verbose scan with JSON export
 sudo ./bin/network-map -vvv -o text,json
+
+# Re-render from a previously exported JSON (no sudo needed)
+./bin/network-map --from-json intranet.json -o png,html -f re-rendered
 ```
 
 ## Discovery Pipeline

@@ -18,5 +18,6 @@ typedef struct {
 void nm_edge_init(nm_edge_t *e, int src, int dst, double weight,
                   nm_edge_type_t type);
 const char *nm_edge_type_str(nm_edge_type_t type);
+nm_edge_type_t nm_edge_type_from_str(const char *str);
 
 #endif /* NM_EDGE_H */
