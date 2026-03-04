@@ -36,6 +36,8 @@ static void color_for_type(nm_host_type_t t, double *r, double *g, double *b)
     case NM_HOST_PRINTER:     *r=1.0; *g=0.5; *b=0.0; break;
     case NM_HOST_IOT:         *r=0.8; *g=0.3; *b=0.8; break;
     case NM_HOST_BOUNDARY:    *r=1.0; *g=0.2; *b=0.2; break;
+    case NM_HOST_SWITCH:      *r=0.0; *g=0.8; *b=0.8; break;
+    case NM_HOST_AP:          *r=0.2; *g=0.9; *b=0.4; break;
     }
 }
 

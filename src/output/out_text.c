@@ -36,6 +36,63 @@ static void print_divider(void)
     putchar('\n');
 }
 
+/* Find the edge connecting parent_id to child_id */
+static const nm_edge_t *find_edge(const nm_graph_t *g, int parent_id, int child_id)
+{
+    for (int i = 0; i < g->edge_count; i++) {
+        const nm_edge_t *e = &g->edges[i];
+        if (!e->in_mst) continue;
+        if ((e->src_id == parent_id && e->dst_id == child_id) ||
+            (e->src_id == child_id && e->dst_id == parent_id))
+            return e;
+    }
+    return NULL;
+}
+
+/* Format edge annotation (port number, medium) */
+static void format_edge_prefix(const nm_edge_t *e, int parent_id,
+                                char *buf, size_t buflen)
+{
+    buf[0] = '\0';
+    if (!e) return;
+
+    if (e->type == NM_EDGE_WIFI) {
+        snprintf(buf, buflen, "~wifi~ ");
+        return;
+    }
+
+    /* Show source port (port on the parent/switch side) */
+    int port = 0;
+    if (e->src_id == parent_id)
+        port = e->src_port_num;
+    else
+        port = e->dst_port_num;
+
+    if (port > 0)
+        snprintf(buf, buflen, "Port %d: ", port);
+}
+
+/* Format additional host detail (WiFi signal, medium) */
+static void format_host_detail(const nm_host_t *h, const nm_edge_t *e,
+                                char *buf, size_t buflen)
+{
+    buf[0] = '\0';
+    if (e && e->type == NM_EDGE_WIFI && h->wifi_signal != 0) {
+        snprintf(buf, buflen, " (%d dBm)", h->wifi_signal);
+        return;
+    }
+    if (e && e->medium == NM_MEDIUM_MOCA) {
+        snprintf(buf, buflen, " [moca]");
+        return;
+    }
+    /* Show medium tag for wired connections */
+    if (h->connection_medium == NM_MEDIUM_WIRED &&
+        (h->type != NM_HOST_SWITCH && h->type != NM_HOST_AP &&
+         h->type != NM_HOST_GATEWAY)) {
+        snprintf(buf, buflen, " [wired]");
+    }
+}
+
 /* Print BFS tree recursively */
 static void print_tree(const nm_graph_t *g, const int *parent,
                        const int *depth, int node,
@@ -52,13 +109,21 @@ static void print_tree(const nm_graph_t *g, const int *parent,
 
     const char *type = nm_host_type_str(h->type);
 
+    /* Edge annotation */
+    const nm_edge_t *e = (parent[node] >= 0 && parent[node] != node) ?
+                         find_edge(g, parent[node], node) : NULL;
+    char edge_prefix[64] = "";
+    char host_detail[64] = "";
+    format_edge_prefix(e, parent[node], edge_prefix, sizeof(edge_prefix));
+    format_host_detail(h, e, host_detail, sizeof(host_detail));
+
     if (depth[node] == 0) {
         /* Root node */
         printf("%s (%s) [%s]\n", name, ipstr, type);
     } else {
-        printf("%s%s%s (%s) [%s]\n",
+        printf("%s%s%s%s (%s) [%s]%s\n",
                prefix, is_last ? "\\-- " : "|-- ",
-               name, ipstr, type);
+               edge_prefix, name, ipstr, type, host_detail);
     }
 
     /* Collect children of this node */
@@ -149,14 +214,20 @@ int nm_out_text(const nm_graph_t *g)
         /* Build MST - need a mutable copy of the graph pointer for kruskal */
         nm_graph_kruskal_mst((nm_graph_t *)g);
 
-        /* Find local host as BFS root */
+        /* Find BFS root: prefer gateway, then local */
         int root = 0;
+        int found_local = -1;
         for (int i = 0; i < g->host_count; i++) {
-            if (g->hosts[i].type == NM_HOST_LOCAL) {
+            if (g->hosts[i].type == NM_HOST_GATEWAY) {
                 root = i;
+                found_local = -1; /* gateway wins */
                 break;
             }
+            if (g->hosts[i].type == NM_HOST_LOCAL && found_local < 0)
+                found_local = i;
         }
+        if (found_local >= 0 && root == 0 && g->hosts[0].type != NM_HOST_GATEWAY)
+            root = found_local;
 
         int *parent = nm_malloc((size_t)g->host_count * sizeof(int));
         int *depth  = nm_malloc((size_t)g->host_count * sizeof(int));

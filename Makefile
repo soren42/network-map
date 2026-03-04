@@ -9,6 +9,7 @@ CORE_SRC = \
 	src/main.c \
 	src/cli.c \
 	src/log.c \
+	src/core/types.c \
 	src/core/host.c \
 	src/core/edge.c \
 	src/core/graph.c \
@@ -20,12 +21,15 @@ CORE_SRC = \
 	src/net/icmp6.c \
 	src/net/nmap.c \
 	src/net/boundary.c \
+	src/net/lldp.c \
+	src/net/unifi.c \
 	src/output/out_json.c \
 	src/output/out_html.c \
 	src/output/out_text.c \
 	src/output/layout.c \
 	src/util/alloc.c \
 	src/util/strutil.c \
+	src/util/conffile.c \
 	vendor/cJSON/cJSON.c
 
 # Platform-specific sources
@@ -77,18 +81,25 @@ TEST_SRC = \
 	tests/test_cli.c \
 	tests/test_nmap.c \
 	tests/test_boundary.c \
+	tests/test_conffile.c \
+	tests/test_lldp.c \
+	tests/test_unifi.c \
 	tests/mock_net.c \
 	src/cli.c \
 	src/log.c \
+	src/core/types.c \
 	src/core/host.c \
 	src/core/edge.c \
 	src/core/graph.c \
 	src/core/json_out.c \
 	src/net/nmap.c \
 	src/net/boundary.c \
+	src/net/lldp.c \
+	src/net/unifi.c \
 	src/output/layout.c \
 	src/util/alloc.c \
 	src/util/strutil.c \
+	src/util/conffile.c \
 	vendor/cJSON/cJSON.c
 
 TEST_OBJ = $(TEST_SRC:.c=.o)

@@ -2,6 +2,7 @@
 #define NM_HOST_H
 
 #include "util/platform.h"
+#include "core/types.h"
 #include <netinet/in.h>
 
 typedef enum {
@@ -11,7 +12,9 @@ typedef enum {
     NM_HOST_WORKSTATION = 3,
     NM_HOST_PRINTER     = 4,
     NM_HOST_IOT         = 5,
-    NM_HOST_BOUNDARY    = 6
+    NM_HOST_BOUNDARY    = 6,
+    NM_HOST_SWITCH      = 7,
+    NM_HOST_AP          = 8
 } nm_host_type_t;
 
 #define NM_MAX_ADDRS     8
@@ -53,6 +56,15 @@ typedef struct {
     int                  ipv4_count;
     struct in6_addr      ipv6_addrs[NM_MAX_ADDRS];
     int                  ipv6_count;
+    /* L2 physical topology fields */
+    unsigned char        switch_mac[NM_MAC_LEN];
+    int                  switch_port;
+    int                  has_switch_info;
+    int                  vlan_id;
+    char                 wifi_ssid[64];
+    int                  wifi_signal;    /* dBm */
+    nm_medium_t          connection_medium;
+    char                 unifi_device_type[32];
     /* Layout coordinates */
     double               x, y, z;
 } nm_host_t;

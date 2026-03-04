@@ -1,4 +1,6 @@
 #include "core/json_out.h"
+#include "core/types.h"
+#include "util/strutil.h"
 #include "mock_net.h"
 #include "cJSON.h"
 #include <stdio.h>
@@ -151,10 +153,91 @@ static void test_json_deserialize_null(void)
     TEST_ASSERT(g == NULL, "deserialize NULL returns NULL");
 }
 
+static void test_json_l2_roundtrip(void)
+{
+    /* Build a graph with L2 fields and verify round-trip */
+    nm_graph_t *g = nm_graph_create();
+    nm_host_t h;
+
+    /* Switch host */
+    nm_host_init(&h);
+    nm_host_set_ipv4(&h, "192.168.1.2");
+    h.type = NM_HOST_SWITCH;
+    nm_strlcpy(h.unifi_device_type, "USW-Pro-Max-16",
+               sizeof(h.unifi_device_type));
+    h.connection_medium = NM_MEDIUM_WIRED;
+    nm_strlcpy(h.display_name, "Switch", sizeof(h.display_name));
+    nm_graph_add_host(g, &h);
+
+    /* WiFi client */
+    nm_host_init(&h);
+    nm_host_set_ipv4(&h, "192.168.1.50");
+    h.type = NM_HOST_WORKSTATION;
+    unsigned char smac[] = {0xaa, 0xbb, 0xcc, 0x11, 0x22, 0x33};
+    memcpy(h.switch_mac, smac, 6);
+    h.switch_port = 5;
+    h.has_switch_info = 1;
+    h.vlan_id = 10;
+    nm_strlcpy(h.wifi_ssid, "MyNetwork", sizeof(h.wifi_ssid));
+    h.wifi_signal = -45;
+    h.connection_medium = NM_MEDIUM_WIFI;
+    nm_strlcpy(h.display_name, "MacBook", sizeof(h.display_name));
+    nm_graph_add_host(g, &h);
+
+    /* L2 edge with port info */
+    int eidx = nm_graph_add_edge(g, 0, 1, 0.5, NM_EDGE_L2);
+    TEST_ASSERT(eidx >= 0, "L2 edge added");
+    g->edges[eidx].src_port_num = 5;
+    g->edges[eidx].dst_port_num = 0;
+    nm_strlcpy(g->edges[eidx].src_port_name, "Port 5",
+               sizeof(g->edges[eidx].src_port_name));
+    g->edges[eidx].speed_mbps = 1000;
+    g->edges[eidx].medium = NM_MEDIUM_WIRED;
+
+    /* Serialize and deserialize */
+    cJSON *json = nm_json_serialize(g);
+    TEST_ASSERT(json != NULL, "L2 serialize non-null");
+
+    nm_graph_t *g2 = nm_json_deserialize(json);
+    TEST_ASSERT(g2 != NULL, "L2 deserialize non-null");
+    TEST_ASSERT_EQ(g2->host_count, 2, "L2 host count");
+    TEST_ASSERT_EQ(g2->edge_count, 1, "L2 edge count");
+
+    /* Verify host L2 fields */
+    TEST_ASSERT_EQ((int)g2->hosts[0].type, (int)NM_HOST_SWITCH,
+                   "switch type preserved");
+    TEST_ASSERT(strcmp(g2->hosts[0].unifi_device_type, "USW-Pro-Max-16") == 0,
+                "unifi_device_type preserved");
+    TEST_ASSERT_EQ(g2->hosts[1].has_switch_info, 1,
+                   "has_switch_info preserved");
+    TEST_ASSERT_EQ(g2->hosts[1].switch_port, 5, "switch_port preserved");
+    TEST_ASSERT_EQ(g2->hosts[1].vlan_id, 10, "vlan_id preserved");
+    TEST_ASSERT(strcmp(g2->hosts[1].wifi_ssid, "MyNetwork") == 0,
+                "wifi_ssid preserved");
+    TEST_ASSERT_EQ(g2->hosts[1].wifi_signal, -45, "wifi_signal preserved");
+    TEST_ASSERT_EQ((int)g2->hosts[1].connection_medium, (int)NM_MEDIUM_WIFI,
+                   "connection_medium preserved");
+
+    /* Verify edge L2 fields */
+    TEST_ASSERT_EQ((int)g2->edges[0].type, (int)NM_EDGE_L2,
+                   "L2 edge type preserved");
+    TEST_ASSERT_EQ(g2->edges[0].src_port_num, 5, "src_port_num preserved");
+    TEST_ASSERT(strcmp(g2->edges[0].src_port_name, "Port 5") == 0,
+                "src_port_name preserved");
+    TEST_ASSERT_EQ(g2->edges[0].speed_mbps, 1000, "speed_mbps preserved");
+    TEST_ASSERT_EQ((int)g2->edges[0].medium, (int)NM_MEDIUM_WIRED,
+                   "edge medium preserved");
+
+    cJSON_Delete(json);
+    nm_graph_destroy(g);
+    nm_graph_destroy(g2);
+}
+
 void test_json_suite(void)
 {
     test_json_serialize();
     test_json_roundtrip();
     test_json_deserialize();
     test_json_deserialize_null();
+    test_json_l2_roundtrip();
 }

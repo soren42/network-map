@@ -29,6 +29,8 @@ static int color_for_type(nm_host_type_t type)
     case NM_HOST_PRINTER:     return COLOR_PAIR(CP_PRINTER);
     case NM_HOST_IOT:         return COLOR_PAIR(CP_IOT);
     case NM_HOST_BOUNDARY:    return COLOR_PAIR(CP_BOUNDARY);
+    case NM_HOST_SWITCH:      return COLOR_PAIR(CP_SERVER);
+    case NM_HOST_AP:          return COLOR_PAIR(CP_LOCAL);
     }
     return 0;
 }

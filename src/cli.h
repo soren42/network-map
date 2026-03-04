@@ -26,6 +26,13 @@ typedef struct {
     char             nameserver[64];
     char             json_input_path[256];
     int              load_from_json;
+    /* UniFi API configuration */
+    char             unifi_host[256];
+    char             unifi_user[128];
+    char             unifi_pass[128];
+    char             unifi_site[64];
+    int              no_lldp;
+    int              no_unifi;
 } nm_config_t;
 
 int nm_cli_parse(nm_config_t *cfg, int argc, char **argv);

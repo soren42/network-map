@@ -151,10 +151,12 @@ static int has_service_port(const nm_host_t *h, int port)
 
 void nm_host_classify(nm_host_t *h)
 {
-    /* Don't reclassify LOCAL, GATEWAY, or BOUNDARY types */
+    /* Don't reclassify LOCAL, GATEWAY, BOUNDARY, SWITCH, or AP types */
     if (h->type == NM_HOST_LOCAL ||
         h->type == NM_HOST_GATEWAY ||
-        h->type == NM_HOST_BOUNDARY)
+        h->type == NM_HOST_BOUNDARY ||
+        h->type == NM_HOST_SWITCH ||
+        h->type == NM_HOST_AP)
         return;
 
     /* Check mDNS name for printer indicators */
@@ -325,6 +327,8 @@ const char *nm_host_type_str(nm_host_type_t type)
         case NM_HOST_PRINTER:     return "printer";
         case NM_HOST_IOT:         return "iot";
         case NM_HOST_BOUNDARY:    return "boundary";
+        case NM_HOST_SWITCH:      return "switch";
+        case NM_HOST_AP:          return "ap";
     }
     return "unknown";
 }
@@ -339,5 +343,7 @@ nm_host_type_t nm_host_type_from_str(const char *str)
     if (strcmp(str, "printer") == 0)     return NM_HOST_PRINTER;
     if (strcmp(str, "iot") == 0)         return NM_HOST_IOT;
     if (strcmp(str, "boundary") == 0)    return NM_HOST_BOUNDARY;
+    if (strcmp(str, "switch") == 0)     return NM_HOST_SWITCH;
+    if (strcmp(str, "ap") == 0)         return NM_HOST_AP;
     return NM_HOST_WORKSTATION;
 }

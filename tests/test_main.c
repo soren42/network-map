@@ -32,6 +32,9 @@ extern void test_json_suite(void);
 extern void test_cli_suite(void);
 extern void test_nmap_suite(void);
 extern void test_boundary_suite(void);
+extern void test_conffile_suite(void);
+extern void test_lldp_suite(void);
+extern void test_unifi_suite(void);
 
 int main(void)
 {
@@ -45,6 +48,9 @@ int main(void)
     RUN_SUITE(test_cli_suite);
     RUN_SUITE(test_nmap_suite);
     RUN_SUITE(test_boundary_suite);
+    RUN_SUITE(test_conffile_suite);
+    RUN_SUITE(test_lldp_suite);
+    RUN_SUITE(test_unifi_suite);
 
     printf("\n=====================\n");
     printf("Results: %d/%d passed, %d failed\n",

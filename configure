@@ -11,6 +11,8 @@ WITH_FFMPEG=auto
 WITH_DNS_SD=auto
 WITH_AVAHI=auto
 WITH_LIBPNG=auto
+WITH_LLDP=auto
+WITH_CURL=auto
 
 # Parse arguments
 for arg in "$@"; do
@@ -23,9 +25,13 @@ for arg in "$@"; do
         --without-dns-sd)  WITH_DNS_SD=no ;;
         --without-avahi)   WITH_AVAHI=no ;;
         --without-libpng)  WITH_LIBPNG=no ;;
+        --without-lldp)    WITH_LLDP=no ;;
+        --without-curl)    WITH_CURL=no ;;
         --with-ncurses)    WITH_NCURSES=yes ;;
         --with-cairo)      WITH_CAIRO=yes ;;
         --with-ffmpeg)     WITH_FFMPEG=yes ;;
+        --with-lldp)       WITH_LLDP=yes ;;
+        --with-curl)       WITH_CURL=yes ;;
         --help)
             echo "Usage: ./configure [OPTIONS]"
             echo ""
@@ -38,6 +44,10 @@ for arg in "$@"; do
             echo "  --without-dns-sd      Disable macOS mDNS"
             echo "  --without-avahi       Disable Linux mDNS"
             echo "  --without-libpng      Disable libpng"
+            echo "  --without-lldp        Disable LLDP discovery"
+            echo "  --without-curl        Disable curl (UniFi API)"
+            echo "  --with-lldp           Enable LLDP discovery"
+            echo "  --with-curl           Enable curl (UniFi API)"
             exit 0
             ;;
         *)
@@ -219,6 +229,26 @@ if [ "$WITH_AVAHI" != "no" ] && [ "$PLATFORM" = "linux" ]; then
 fi
 echo "  avahi: $FOUND_AVAHI"
 
+# Probe lldpcli
+FOUND_LLDP=no
+if [ "$WITH_LLDP" != "no" ]; then
+    if command -v lldpcli >/dev/null 2>&1; then
+        FOUND_LLDP=yes
+        DEFINES="$DEFINES -DHAVE_LLDP"
+    fi
+fi
+echo "  lldp: $FOUND_LLDP"
+
+# Probe curl
+FOUND_CURL=no
+if [ "$WITH_CURL" != "no" ]; then
+    if command -v curl >/dev/null 2>&1; then
+        FOUND_CURL=yes
+        DEFINES="$DEFINES -DHAVE_CURL"
+    fi
+fi
+echo "  curl: $FOUND_CURL"
+
 # Generate config.h
 echo "Generating config.h..."
 cat > config.h <<EOF
@@ -243,11 +273,13 @@ EOF
 [ "$FOUND_DNS_SD" = "yes" ]  && echo "#define HAVE_DNS_SD 1"  >> config.h
 [ "$FOUND_AVAHI" = "yes" ]   && echo "#define HAVE_AVAHI 1"   >> config.h
 [ "$FOUND_LIBPNG" = "yes" ]  && echo "#define HAVE_LIBPNG 1"  >> config.h
+[ "$FOUND_LLDP" = "yes" ]    && echo "#define HAVE_LLDP 1"    >> config.h
+[ "$FOUND_CURL" = "yes" ]    && echo "#define HAVE_CURL 1"    >> config.h
 
 cat >> config.h <<EOF
 
 /* Version */
-#define NM_VERSION "0.1.0"
+#define NM_VERSION "0.2.0"
 
 #endif /* NM_CONFIG_H */
 EOF
@@ -268,6 +300,8 @@ FOUND_FFMPEG = $FOUND_FFMPEG
 FOUND_DNS_SD = $FOUND_DNS_SD
 FOUND_AVAHI = $FOUND_AVAHI
 FOUND_LIBPNG = $FOUND_LIBPNG
+FOUND_LLDP = $FOUND_LLDP
+FOUND_CURL = $FOUND_CURL
 EOF
 
 echo ""

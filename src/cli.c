@@ -57,6 +57,12 @@ void nm_cli_usage(const char *prog)
         "  --fast               Fast mode (reduce timeouts, skip slow probes)\n"
         "  -n, --nameserver IP  Use custom DNS server for reverse lookups\n"
         "  --from-json FILE     Re-render outputs from a previously exported JSON file\n"
+        "  --no-lldp            Disable LLDP discovery\n"
+        "  --no-unifi           Disable UniFi API discovery\n"
+        "  --unifi-host HOST    UniFi controller hostname/IP\n"
+        "  --unifi-user USER    UniFi controller username\n"
+        "  --unifi-pass PASS    UniFi controller password\n"
+        "  --unifi-site SITE    UniFi site name (default: default)\n"
         "  -h, --help           Show this help\n"
         "  --version            Show version\n"
         "\n"
@@ -78,6 +84,12 @@ int nm_cli_parse(nm_config_t *cfg, int argc, char **argv)
         {"fast",        no_argument,       NULL, 'F'},
         {"nameserver",  required_argument, NULL, 'n'},
         {"from-json",   required_argument, NULL, 'J'},
+        {"no-lldp",     no_argument,       NULL, 'L'},
+        {"no-unifi",    no_argument,       NULL, 'U'},
+        {"unifi-host",  required_argument, NULL, 1001},
+        {"unifi-user",  required_argument, NULL, 1002},
+        {"unifi-pass",  required_argument, NULL, 1003},
+        {"unifi-site",  required_argument, NULL, 1004},
         {"help",        no_argument,       NULL, 'h'},
         {"version",     no_argument,       NULL, 'V'},
         {NULL, 0, NULL, 0}
@@ -130,6 +142,24 @@ int nm_cli_parse(nm_config_t *cfg, int argc, char **argv)
             strncpy(cfg->json_input_path, optarg,
                     sizeof(cfg->json_input_path) - 1);
             cfg->load_from_json = 1;
+            break;
+        case 'L':
+            cfg->no_lldp = 1;
+            break;
+        case 'U':
+            cfg->no_unifi = 1;
+            break;
+        case 1001:
+            strncpy(cfg->unifi_host, optarg, sizeof(cfg->unifi_host) - 1);
+            break;
+        case 1002:
+            strncpy(cfg->unifi_user, optarg, sizeof(cfg->unifi_user) - 1);
+            break;
+        case 1003:
+            strncpy(cfg->unifi_pass, optarg, sizeof(cfg->unifi_pass) - 1);
+            break;
+        case 1004:
+            strncpy(cfg->unifi_site, optarg, sizeof(cfg->unifi_site) - 1);
             break;
         case 'h':
             nm_cli_usage(argv[0]);

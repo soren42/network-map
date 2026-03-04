@@ -1,0 +1,17 @@
+# netmap.conf - Network Map configuration
+#
+# Place this file at:
+#   /etc/netmap.conf              (system-wide)
+#   ~/.config/netmap/netmap.conf  (per-user)
+#
+# Environment variables override config file values:
+#   NETMAP_UNIFI_HOST, NETMAP_UNIFI_USER, NETMAP_UNIFI_PASS
+#
+# CLI flags (--unifi-host, etc.) override everything.
+
+[unifi]
+# UniFi controller connection (for L2 topology discovery)
+# host = 192.168.1.1
+# user = admin
+# pass = your-password-here
+# site = default

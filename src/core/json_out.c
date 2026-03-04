@@ -97,6 +97,26 @@ static cJSON *host_to_json(const nm_host_t *h)
     if (h->is_boundary)
         cJSON_AddBoolToObject(obj, "is_boundary", h->is_boundary);
 
+    /* L2 topology fields */
+    if (h->has_switch_info) {
+        char smac[NM_MAC_STR_LEN];
+        nm_mac_to_str(h->switch_mac, smac, sizeof(smac));
+        cJSON_AddStringToObject(obj, "switch_mac", smac);
+        cJSON_AddNumberToObject(obj, "switch_port", h->switch_port);
+    }
+    if (h->vlan_id > 0)
+        cJSON_AddNumberToObject(obj, "vlan_id", h->vlan_id);
+    if (h->wifi_ssid[0] != '\0')
+        cJSON_AddStringToObject(obj, "wifi_ssid", h->wifi_ssid);
+    if (h->wifi_signal != 0)
+        cJSON_AddNumberToObject(obj, "wifi_signal", h->wifi_signal);
+    if (h->connection_medium != NM_MEDIUM_UNKNOWN)
+        cJSON_AddStringToObject(obj, "connection_medium",
+                                nm_medium_str(h->connection_medium));
+    if (h->unifi_device_type[0] != '\0')
+        cJSON_AddStringToObject(obj, "unifi_device_type",
+                                h->unifi_device_type);
+
     /* Layout coords */
     cJSON_AddNumberToObject(obj, "x", h->x);
     cJSON_AddNumberToObject(obj, "y", h->y);
@@ -113,13 +133,28 @@ static cJSON *edge_to_json(const nm_edge_t *e)
     cJSON_AddNumberToObject(obj, "weight", e->weight);
     cJSON_AddStringToObject(obj, "type", nm_edge_type_str(e->type));
     cJSON_AddBoolToObject(obj, "in_mst", e->in_mst);
+
+    /* L2 topology fields */
+    if (e->src_port_num > 0)
+        cJSON_AddNumberToObject(obj, "src_port_num", e->src_port_num);
+    if (e->dst_port_num > 0)
+        cJSON_AddNumberToObject(obj, "dst_port_num", e->dst_port_num);
+    if (e->src_port_name[0] != '\0')
+        cJSON_AddStringToObject(obj, "src_port_name", e->src_port_name);
+    if (e->dst_port_name[0] != '\0')
+        cJSON_AddStringToObject(obj, "dst_port_name", e->dst_port_name);
+    if (e->speed_mbps > 0)
+        cJSON_AddNumberToObject(obj, "speed_mbps", e->speed_mbps);
+    if (e->medium != NM_MEDIUM_UNKNOWN)
+        cJSON_AddStringToObject(obj, "medium", nm_medium_str(e->medium));
+
     return obj;
 }
 
 cJSON *nm_json_serialize(const nm_graph_t *g)
 {
     cJSON *root = cJSON_CreateObject();
-    cJSON_AddStringToObject(root, "version", "1.0");
+    cJSON_AddStringToObject(root, "version", "1.1");
     cJSON_AddNumberToObject(root, "host_count", g->host_count);
     cJSON_AddNumberToObject(root, "edge_count", g->edge_count);
 
@@ -207,6 +242,30 @@ static void host_from_json(const cJSON *obj, nm_host_t *h)
     if (bnd && cJSON_IsBool(bnd))
         h->is_boundary = cJSON_IsTrue(bnd);
 
+    /* L2 topology fields */
+    if ((s = json_str(obj, "switch_mac"))) {
+        unsigned char smac[6];
+        if (nm_str_to_mac(s, smac) == 0) {
+            memcpy(h->switch_mac, smac, 6);
+            h->has_switch_info = 1;
+        }
+    }
+    {
+        double sp = json_num(obj, "switch_port", 0);
+        if (sp > 0) {
+            h->switch_port = (int)sp;
+            h->has_switch_info = 1;
+        }
+    }
+    h->vlan_id = (int)json_num(obj, "vlan_id", 0);
+    if ((s = json_str(obj, "wifi_ssid")))
+        nm_strlcpy(h->wifi_ssid, s, sizeof(h->wifi_ssid));
+    h->wifi_signal = (int)json_num(obj, "wifi_signal", 0);
+    if ((s = json_str(obj, "connection_medium")))
+        h->connection_medium = nm_medium_from_str(s);
+    if ((s = json_str(obj, "unifi_device_type")))
+        nm_strlcpy(h->unifi_device_type, s, sizeof(h->unifi_device_type));
+
     /* Secondary IPv4 addresses */
     cJSON *arr = cJSON_GetObjectItem(obj, "ipv4_addrs");
     if (arr && cJSON_IsArray(arr)) {
@@ -279,6 +338,22 @@ nm_graph_t *nm_json_deserialize(const cJSON *root)
             cJSON *mst = cJSON_GetObjectItem(eobj, "in_mst");
             if (idx >= 0 && mst && cJSON_IsBool(mst))
                 g->edges[idx].in_mst = cJSON_IsTrue(mst);
+
+            /* L2 topology fields */
+            if (idx >= 0) {
+                nm_edge_t *edge = &g->edges[idx];
+                edge->src_port_num = (int)json_num(eobj, "src_port_num", 0);
+                edge->dst_port_num = (int)json_num(eobj, "dst_port_num", 0);
+                const char *spn = json_str(eobj, "src_port_name");
+                if (spn) nm_strlcpy(edge->src_port_name, spn,
+                                    sizeof(edge->src_port_name));
+                const char *dpn = json_str(eobj, "dst_port_name");
+                if (dpn) nm_strlcpy(edge->dst_port_name, dpn,
+                                    sizeof(edge->dst_port_name));
+                edge->speed_mbps = (int)json_num(eobj, "speed_mbps", 0);
+                const char *med = json_str(eobj, "medium");
+                if (med) edge->medium = nm_medium_from_str(med);
+            }
         }
     }
 

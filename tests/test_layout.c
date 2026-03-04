@@ -14,15 +14,27 @@ extern int g_tests_run, g_tests_passed, g_tests_failed;
     } \
 } while(0)
 
+/* Find the BFS root: gateway preferred, then local */
+static int find_root(const nm_graph_t *g)
+{
+    int local_id = -1;
+    for (int i = 0; i < g->host_count; i++) {
+        if (g->hosts[i].type == NM_HOST_GATEWAY) return i;
+        if (g->hosts[i].type == NM_HOST_LOCAL && local_id < 0) local_id = i;
+    }
+    return (local_id >= 0) ? local_id : 0;
+}
+
 static void test_layout_radial_2d(void)
 {
     nm_graph_t *g = mock_build_sample_graph();
     int rc = nm_layout_radial_2d(g);
     TEST_ASSERT(rc == 0, "radial 2d returns 0");
 
-    /* Root should be at origin */
-    TEST_ASSERT(fabs(g->hosts[0].x) < 0.01, "root x near 0");
-    TEST_ASSERT(fabs(g->hosts[0].y) < 0.01, "root y near 0");
+    /* Root should be at origin (gateway or local) */
+    int root = find_root(g);
+    TEST_ASSERT(fabs(g->hosts[root].x) < 0.01, "root x near 0");
+    TEST_ASSERT(fabs(g->hosts[root].y) < 0.01, "root y near 0");
 
     /* Non-root hosts should be displaced */
     int displaced = 0;
@@ -43,7 +55,8 @@ static void test_layout_3d(void)
     TEST_ASSERT(rc == 0, "3d layout returns 0");
 
     /* Root at z=0 */
-    TEST_ASSERT(fabs(g->hosts[0].z) < 0.01, "root z near 0");
+    int root3d = find_root(g);
+    TEST_ASSERT(fabs(g->hosts[root3d].z) < 0.01, "root z near 0");
 
     /* Boundary host should have positive z (depth) */
     int has_depth = 0;

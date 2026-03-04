@@ -9,6 +9,8 @@
 #include "net/mdns.h"
 #include "net/boundary.h"
 #include "net/nmap.h"
+#include "net/lldp.h"
+#include "net/unifi.h"
 #include "log.h"
 #include "util/alloc.h"
 #include "util/strutil.h"
@@ -259,6 +261,60 @@ int nm_scan_ipv6_augment(nm_graph_t *g, const nm_config_t *cfg)
     return total;
 }
 
+int nm_scan_lldp_discover(nm_graph_t *g, const nm_config_t *cfg)
+{
+    if (cfg->no_lldp || cfg->fast_mode) {
+        LOG_INFO("Phase 8: skipped (LLDP disabled)");
+        scan_progress("LLDP discovery: skipped");
+        return 0;
+    }
+
+    if (!nm_lldp_available()) {
+        LOG_INFO("Phase 8: lldpcli not available");
+        scan_progress("LLDP: lldpcli not found");
+        return 0;
+    }
+
+    LOG_INFO("Phase 8: LLDP neighbor discovery");
+    scan_progress("LLDP neighbor discovery...");
+    int n = nm_lldp_discover(g);
+    if (n < 0) {
+        LOG_WARN("Phase 8: LLDP discovery failed");
+        scan_progress("LLDP discovery failed");
+        return -1;
+    }
+    LOG_INFO("Phase 8: discovered %d LLDP neighbor(s)", n);
+    scan_progress("LLDP: %d neighbor(s)", n);
+    return n;
+}
+
+int nm_scan_unifi_discover(nm_graph_t *g, const nm_config_t *cfg)
+{
+    if (cfg->no_unifi || cfg->fast_mode) {
+        LOG_INFO("Phase 9: skipped (UniFi disabled)");
+        scan_progress("UniFi discovery: skipped");
+        return 0;
+    }
+
+    if (!nm_unifi_available(cfg)) {
+        LOG_INFO("Phase 9: UniFi API not available");
+        scan_progress("UniFi: not configured or curl not found");
+        return 0;
+    }
+
+    LOG_INFO("Phase 9: UniFi controller discovery");
+    scan_progress("UniFi controller discovery...");
+    int n = nm_unifi_discover(g, cfg);
+    if (n < 0) {
+        LOG_WARN("Phase 9: UniFi discovery failed");
+        scan_progress("UniFi discovery failed");
+        return -1;
+    }
+    LOG_INFO("Phase 9: discovered %d UniFi device(s)/client(s)", n);
+    scan_progress("UniFi: %d device(s)/client(s)", n);
+    return n;
+}
+
 nm_graph_t *nm_scan_run(const nm_config_t *cfg)
 {
     if (!cfg) {
@@ -286,6 +342,8 @@ nm_graph_t *nm_scan_run(const nm_config_t *cfg)
     nm_scan_boundary_detect(g, cfg);
     nm_scan_nmap_enrich(g, cfg);
     nm_scan_ipv6_augment(g, cfg);
+    nm_scan_lldp_discover(g, cfg);
+    nm_scan_unifi_discover(g, cfg);
 
     /* Classify hosts and compute display names */
     for (int i = 0; i < g->host_count; i++) {

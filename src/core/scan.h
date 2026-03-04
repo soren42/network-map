@@ -19,5 +19,7 @@ int nm_scan_name_resolution(nm_graph_t *g, const nm_config_t *cfg);
 int nm_scan_boundary_detect(nm_graph_t *g, const nm_config_t *cfg);
 int nm_scan_nmap_enrich(nm_graph_t *g, const nm_config_t *cfg);
 int nm_scan_ipv6_augment(nm_graph_t *g, const nm_config_t *cfg);
+int nm_scan_lldp_discover(nm_graph_t *g, const nm_config_t *cfg);
+int nm_scan_unifi_discover(nm_graph_t *g, const nm_config_t *cfg);
 
 #endif /* NM_SCAN_H */

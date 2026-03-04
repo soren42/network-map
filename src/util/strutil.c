@@ -1,4 +1,6 @@
 #include "util/strutil.h"
+#include "util/alloc.h"
+#include "log.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -64,4 +66,35 @@ void nm_str_unescape_mdns(char *s)
         *w++ = *r++;
     }
     *w = '\0';
+}
+
+#define READ_ALL_INIT  (64 * 1024)
+#define READ_ALL_MAX   (16 * 1024 * 1024)
+
+char *nm_read_all_fp(FILE *fp, size_t *out_len, size_t max_bytes)
+{
+    if (!fp) return NULL;
+    size_t limit = (max_bytes > 0) ? max_bytes : READ_ALL_MAX;
+    size_t cap = READ_ALL_INIT;
+    size_t len = 0;
+    char *buf = nm_malloc(cap);
+
+    while (!feof(fp)) {
+        if (len + 4096 > cap) {
+            if (cap >= limit) {
+                LOG_ERROR("read_all: output exceeds %zu byte limit", limit);
+                nm_free(buf);
+                return NULL;
+            }
+            cap *= 2;
+            if (cap > limit) cap = limit;
+            buf = nm_realloc(buf, cap);
+        }
+        size_t n = fread(buf + len, 1, cap - len - 1, fp);
+        if (n == 0) break;
+        len += n;
+    }
+    buf[len] = '\0';
+    if (out_len) *out_len = len;
+    return buf;
 }

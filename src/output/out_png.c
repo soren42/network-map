@@ -26,6 +26,8 @@ static void color_for_type(nm_host_type_t t, double *r, double *g, double *b)
     case NM_HOST_PRINTER:     *r=1.0; *g=0.5; *b=0.0; break;
     case NM_HOST_IOT:         *r=0.8; *g=0.3; *b=0.8; break;
     case NM_HOST_BOUNDARY:    *r=1.0; *g=0.2; *b=0.2; break;
+    case NM_HOST_SWITCH:      *r=0.0; *g=0.8; *b=0.8; break;
+    case NM_HOST_AP:          *r=0.2; *g=0.9; *b=0.4; break;
     }
 }
 
@@ -67,15 +69,34 @@ int nm_out_png(const nm_graph_t *g, const char *filename)
         double ey = d->y * scale + oy;
 
         if (e->in_mst) {
-            cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.6);
-            cairo_set_line_width(cr, 2.0);
+            /* Color edges by type */
+            switch (e->type) {
+            case NM_EDGE_L2:
+                cairo_set_source_rgba(cr, 0.3, 0.5, 1.0, 0.7);
+                cairo_set_line_width(cr, 2.5);
+                break;
+            case NM_EDGE_WIFI:
+                cairo_set_source_rgba(cr, 0.2, 0.9, 0.4, 0.6);
+                cairo_set_line_width(cr, 1.5);
+                break;
+            default:
+                cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.6);
+                cairo_set_line_width(cr, 2.0);
+                break;
+            }
         } else {
             cairo_set_source_rgba(cr, 0.5, 0.5, 0.5, 0.3);
             cairo_set_line_width(cr, 1.0);
         }
         cairo_move_to(cr, sx, sy);
         cairo_line_to(cr, ex, ey);
+        /* Dashed line for WiFi edges */
+        if (e->type == NM_EDGE_WIFI) {
+            double dashes[] = {6.0, 4.0};
+            cairo_set_dash(cr, dashes, 2, 0);
+        }
         cairo_stroke(cr);
+        cairo_set_dash(cr, NULL, 0, 0); /* Reset dash */
     }
 
     /* Draw nodes */
@@ -121,11 +142,12 @@ int nm_out_png(const nm_graph_t *g, const char *filename)
     /* Legend */
     cairo_set_font_size(cr, 11);
     const char *labels[] = {"Local", "Gateway", "Server", "Workstation",
-                            "Printer", "IoT", "Boundary"};
+                            "Printer", "IoT", "Boundary", "Switch", "AP"};
     nm_host_type_t types[] = {NM_HOST_LOCAL, NM_HOST_GATEWAY, NM_HOST_SERVER,
                               NM_HOST_WORKSTATION, NM_HOST_PRINTER,
-                              NM_HOST_IOT, NM_HOST_BOUNDARY};
-    for (int i = 0; i < 7; i++) {
+                              NM_HOST_IOT, NM_HOST_BOUNDARY,
+                              NM_HOST_SWITCH, NM_HOST_AP};
+    for (int i = 0; i < 9; i++) {
         double lr, lg, lb;
         color_for_type(types[i], &lr, &lg, &lb);
         cairo_set_source_rgb(cr, lr, lg, lb);

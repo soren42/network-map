@@ -209,12 +209,23 @@ static int uf_union(uf_t *uf, int a, int b)
 /* We need a way to sort edge indices by weight. Use a simple approach. */
 static nm_graph_t *g_sort_graph; /* temp for qsort comparator */
 
+/* Effective weight for MST: bias toward L2 physical links */
+static double mst_effective_weight(const nm_edge_t *e)
+{
+    double w = e->weight;
+    switch (e->type) {
+    case NM_EDGE_L2:   return w * 0.1;   /* strongly prefer wired L2 */
+    case NM_EDGE_WIFI: return w * 0.5;   /* prefer WiFi over IP-inferred */
+    default:           return w;
+    }
+}
+
 static int edge_idx_cmp(const void *a, const void *b)
 {
     int ia = *(const int *)a;
     int ib = *(const int *)b;
-    double wa = g_sort_graph->edges[ia].weight;
-    double wb = g_sort_graph->edges[ib].weight;
+    double wa = mst_effective_weight(&g_sort_graph->edges[ia]);
+    double wb = mst_effective_weight(&g_sort_graph->edges[ib]);
     if (wa < wb) return -1;
     if (wa > wb) return  1;
     return 0;

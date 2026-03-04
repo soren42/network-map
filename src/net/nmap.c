@@ -8,8 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* Initial buffer size for reading nmap output */
-#define NMAP_BUF_INIT  (64 * 1024)
+/* Buffer limits kept for reference; actual reading now via nm_read_all_fp */
 #define NMAP_BUF_MAX   (16 * 1024 * 1024)
 
 /* -----------------------------------------------------------
@@ -112,34 +111,10 @@ int nm_nmap_available(void)
     return (found && status == 0) ? 1 : 0;
 }
 
-/* Read all output from a FILE* into a malloc'd buffer.
-   Returns buffer (NUL-terminated) and sets *out_len.
-   Caller must nm_free() the result. Returns NULL on error. */
+/* Thin wrapper for backward-compat within this file */
 static char *read_all(FILE *fp, size_t *out_len)
 {
-    size_t cap = NMAP_BUF_INIT;
-    size_t len = 0;
-    char *buf = nm_malloc(cap);
-
-    while (!feof(fp)) {
-        if (len + 4096 > cap) {
-            if (cap >= NMAP_BUF_MAX) {
-                LOG_ERROR("nmap: output exceeds %d MB limit",
-                          (int)(NMAP_BUF_MAX / (1024 * 1024)));
-                nm_free(buf);
-                return NULL;
-            }
-            cap *= 2;
-            if (cap > NMAP_BUF_MAX) cap = NMAP_BUF_MAX;
-            buf = nm_realloc(buf, cap);
-        }
-        size_t n = fread(buf + len, 1, cap - len - 1, fp);
-        if (n == 0) break;
-        len += n;
-    }
-    buf[len] = '\0';
-    if (out_len) *out_len = len;
-    return buf;
+    return nm_read_all_fp(fp, out_len, NMAP_BUF_MAX);
 }
 
 /* Parse a single <host>...</host> block and enrich the graph.

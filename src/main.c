@@ -1,5 +1,6 @@
 #include "config.h"
 #include "cli.h"
+#include "util/conffile.h"
 #include "log.h"
 #include "core/scan.h"
 #include "core/graph.h"
@@ -30,6 +31,7 @@ int main(int argc, char **argv)
         return 1;
     }
 
+    nm_conffile_load(&cfg);
     nm_log_set_level(cfg.verbosity);
     LOG_INFO("network-map %s starting", NM_VERSION);
 

@@ -15,11 +15,20 @@ int nm_layout_radial_2d(nm_graph_t *g)
     /* Compute MST if not done */
     nm_graph_kruskal_mst(g);
 
-    /* BFS from first local host */
+    /* BFS root: prefer gateway, then local */
     int src = 0;
+    int found_local = -1;
     for (int i = 0; i < g->host_count; i++) {
-        if (g->hosts[i].type == NM_HOST_LOCAL) { src = i; break; }
+        if (g->hosts[i].type == NM_HOST_GATEWAY) {
+            src = i;
+            found_local = -1;
+            break;
+        }
+        if (g->hosts[i].type == NM_HOST_LOCAL && found_local < 0)
+            found_local = i;
     }
+    if (found_local >= 0 && src == 0 && g->hosts[0].type != NM_HOST_GATEWAY)
+        src = found_local;
 
     int *parent = nm_calloc((size_t)g->host_count, sizeof(int));
     int *depth = nm_calloc((size_t)g->host_count, sizeof(int));
@@ -86,10 +95,20 @@ int nm_layout_3d(nm_graph_t *g)
 
     nm_graph_kruskal_mst(g);
 
+    /* BFS root: prefer gateway, then local */
     int src = 0;
+    int found_local3d = -1;
     for (int i = 0; i < g->host_count; i++) {
-        if (g->hosts[i].type == NM_HOST_LOCAL) { src = i; break; }
+        if (g->hosts[i].type == NM_HOST_GATEWAY) {
+            src = i;
+            found_local3d = -1;
+            break;
+        }
+        if (g->hosts[i].type == NM_HOST_LOCAL && found_local3d < 0)
+            found_local3d = i;
     }
+    if (found_local3d >= 0 && src == 0 && g->hosts[0].type != NM_HOST_GATEWAY)
+        src = found_local3d;
 
     int *parent = nm_calloc((size_t)g->host_count, sizeof(int));
     int *depth = nm_calloc((size_t)g->host_count, sizeof(int));
@@ -202,8 +221,9 @@ void nm_layout_force_refine(nm_graph_t *g, int iterations)
 
         /* Apply displacements with temperature limiting */
         for (int i = 0; i < g->host_count; i++) {
-            /* Don't move the root (local host) */
-            if (g->hosts[i].type == NM_HOST_LOCAL) continue;
+            /* Don't move the root (gateway or local host) */
+            if (g->hosts[i].type == NM_HOST_LOCAL ||
+                g->hosts[i].type == NM_HOST_GATEWAY) continue;
 
             double dist = sqrt(dx[i]*dx[i] + dy[i]*dy[i] + dz[i]*dz[i]);
             if (dist < 0.01) continue;

@@ -1,4 +1,5 @@
 #include "core/host.h"
+#include "core/types.h"
 #include "util/strutil.h"
 #include <stdio.h>
 #include <string.h>
@@ -173,6 +174,52 @@ static void test_host_type_str(void)
     TEST_ASSERT_STR(nm_host_type_str(NM_HOST_PRINTER), "printer", "type printer");
     TEST_ASSERT_STR(nm_host_type_str(NM_HOST_IOT), "iot", "type iot");
     TEST_ASSERT_STR(nm_host_type_str(NM_HOST_BOUNDARY), "boundary", "type boundary");
+    TEST_ASSERT_STR(nm_host_type_str(NM_HOST_SWITCH), "switch", "type switch");
+    TEST_ASSERT_STR(nm_host_type_str(NM_HOST_AP), "ap", "type ap");
+
+    /* Round-trip */
+    TEST_ASSERT_EQ((int)nm_host_type_from_str("switch"), (int)NM_HOST_SWITCH,
+                   "switch from_str round-trip");
+    TEST_ASSERT_EQ((int)nm_host_type_from_str("ap"), (int)NM_HOST_AP,
+                   "ap from_str round-trip");
+}
+
+static void test_host_medium_str(void)
+{
+    TEST_ASSERT_STR(nm_medium_str(NM_MEDIUM_UNKNOWN), "unknown", "medium unknown");
+    TEST_ASSERT_STR(nm_medium_str(NM_MEDIUM_WIRED), "wired", "medium wired");
+    TEST_ASSERT_STR(nm_medium_str(NM_MEDIUM_WIFI), "wifi", "medium wifi");
+    TEST_ASSERT_STR(nm_medium_str(NM_MEDIUM_MOCA), "moca", "medium moca");
+
+    TEST_ASSERT_EQ((int)nm_medium_from_str("wired"), (int)NM_MEDIUM_WIRED,
+                   "wired from_str");
+    TEST_ASSERT_EQ((int)nm_medium_from_str("wifi"), (int)NM_MEDIUM_WIFI,
+                   "wifi from_str");
+    TEST_ASSERT_EQ((int)nm_medium_from_str("moca"), (int)NM_MEDIUM_MOCA,
+                   "moca from_str");
+    TEST_ASSERT_EQ((int)nm_medium_from_str("garbage"), (int)NM_MEDIUM_UNKNOWN,
+                   "unknown from_str");
+    TEST_ASSERT_EQ((int)nm_medium_from_str(NULL), (int)NM_MEDIUM_UNKNOWN,
+                   "NULL from_str");
+}
+
+static void test_host_classify_switch_ap(void)
+{
+    nm_host_t h;
+
+    /* SWITCH type is not reclassified */
+    nm_host_init(&h);
+    h.type = NM_HOST_SWITCH;
+    nm_host_add_service(&h, 80, "tcp", "http", NULL);
+    nm_host_classify(&h);
+    TEST_ASSERT_EQ((int)h.type, (int)NM_HOST_SWITCH, "SWITCH not reclassified");
+
+    /* AP type is not reclassified */
+    nm_host_init(&h);
+    h.type = NM_HOST_AP;
+    nm_host_add_service(&h, 80, "tcp", "http", NULL);
+    nm_host_classify(&h);
+    TEST_ASSERT_EQ((int)h.type, (int)NM_HOST_AP, "AP not reclassified");
 }
 
 void test_host_suite(void)
@@ -183,4 +230,6 @@ void test_host_suite(void)
     test_host_add_service();
     test_host_classify();
     test_host_type_str();
+    test_host_medium_str();
+    test_host_classify_switch_ap();
 }
