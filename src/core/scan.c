@@ -47,10 +47,11 @@ static void scan_progress(const char *fmt, ...)
 
 int nm_scan_local_interfaces(nm_graph_t *g, const nm_config_t *cfg)
 {
-    (void)cfg;
     LOG_INFO("Phase 1: Local host identification");
+    if (cfg->iface_filter[0])
+        LOG_INFO("Interface filter: %s", cfg->iface_filter);
     scan_progress("Enumerating local interfaces...");
-    int n = nm_iface_enumerate(g);
+    int n = nm_iface_enumerate(g, cfg);
     if (n < 0) {
         LOG_ERROR("Failed to enumerate network interfaces");
         return -1;

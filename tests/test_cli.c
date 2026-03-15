@@ -137,6 +137,40 @@ static void test_cli_from_json_default(void)
     TEST_ASSERT_EQ(cfg.json_input_path[0], '\0', "json_input_path default empty");
 }
 
+static void test_cli_interface_single(void)
+{
+    nm_config_t cfg;
+    char *argv[] = {"prog", "-i", "eth0"};
+    int rc = nm_cli_parse(&cfg, 3, argv);
+    TEST_ASSERT_EQ(rc, 0, "parse -i eth0 ok");
+    TEST_ASSERT_STR(cfg.iface_filter, "eth0", "single interface filter");
+}
+
+static void test_cli_interface_multiple(void)
+{
+    nm_config_t cfg;
+    char *argv[] = {"prog", "-i", "eth0", "-i", "wlan0"};
+    int rc = nm_cli_parse(&cfg, 5, argv);
+    TEST_ASSERT_EQ(rc, 0, "parse -i eth0 -i wlan0 ok");
+    TEST_ASSERT_STR(cfg.iface_filter, "eth0,wlan0", "multiple interface filter");
+}
+
+static void test_cli_interface_long(void)
+{
+    nm_config_t cfg;
+    char *argv[] = {"prog", "--interface", "en0"};
+    int rc = nm_cli_parse(&cfg, 3, argv);
+    TEST_ASSERT_EQ(rc, 0, "parse --interface en0 ok");
+    TEST_ASSERT_STR(cfg.iface_filter, "en0", "long interface flag");
+}
+
+static void test_cli_interface_default(void)
+{
+    nm_config_t cfg;
+    nm_cli_defaults(&cfg);
+    TEST_ASSERT_EQ(cfg.iface_filter[0], '\0', "iface_filter default empty");
+}
+
 void test_cli_suite(void)
 {
     test_cli_defaults();
@@ -150,4 +184,8 @@ void test_cli_suite(void)
     test_cli_combined();
     test_cli_from_json();
     test_cli_from_json_default();
+    test_cli_interface_single();
+    test_cli_interface_multiple();
+    test_cli_interface_long();
+    test_cli_interface_default();
 }

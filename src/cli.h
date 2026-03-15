@@ -33,6 +33,8 @@ typedef struct {
     char             unifi_site[64];
     int              no_lldp;
     int              no_unifi;
+    /* Interface filter: comma-separated list of allowed interface names */
+    char             iface_filter[256];
 } nm_config_t;
 
 int nm_cli_parse(nm_config_t *cfg, int argc, char **argv);

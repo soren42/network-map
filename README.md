@@ -54,6 +54,7 @@ Options:
   -v                   Increase verbosity (-v to -vvvvv)
   -o, --output FMT     Output formats: text,json,curses,png,mp4,html
   -f, --file PATH      Output filename base (default: intranet)
+  -i, --interface IF   Only use specified interface(s) (repeatable)
   -4                   IPv4 only
   -6                   IPv6 only
   --no-mdns            Disable mDNS discovery
@@ -99,6 +100,10 @@ sudo ./bin/network-map -vvv -o text,json
 # Scan with UniFi controller integration
 sudo ./bin/network-map --unifi-host 192.168.1.1 \
   --unifi-user admin --unifi-pass secret
+
+# Scan only specific interface(s) on a multi-homed machine
+sudo ./bin/network-map -i en0
+sudo ./bin/network-map -i eth0 -i eth1
 
 # Skip L2 discovery, IP-layer only
 sudo ./bin/network-map --no-lldp --no-unifi

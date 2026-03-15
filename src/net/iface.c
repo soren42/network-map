@@ -16,7 +16,27 @@
 #include <linux/if_packet.h>
 #endif
 
-int nm_iface_enumerate(nm_graph_t *g)
+/* Check if an interface name is in the comma-separated filter list.
+   Returns 1 if the filter is empty (allow all) or the name matches. */
+static int iface_allowed(const char *name, const char *filter)
+{
+    if (!filter || filter[0] == '\0')
+        return 1; /* no filter — allow all */
+
+    char buf[256];
+    nm_strlcpy(buf, filter, sizeof(buf));
+    char *saveptr = NULL;
+    char *tok = strtok_r(buf, ",", &saveptr);
+    while (tok) {
+        while (*tok == ' ') tok++;
+        if (strcmp(tok, name) == 0)
+            return 1;
+        tok = strtok_r(NULL, ",", &saveptr);
+    }
+    return 0;
+}
+
+int nm_iface_enumerate(nm_graph_t *g, const nm_config_t *cfg)
 {
     struct ifaddrs *ifap, *ifa;
     if (getifaddrs(&ifap) != 0) {
@@ -44,11 +64,14 @@ int nm_iface_enumerate(nm_graph_t *g)
     nm_host_t *local = &g->hosts[local_id];
     int iface_count = 0;
 
+    const char *filter = cfg ? cfg->iface_filter : NULL;
+
     /* First pass: collect MACs and interface names */
     for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
         if (!ifa->ifa_addr) continue;
         if (ifa->ifa_flags & IFF_LOOPBACK) continue;
         if (!(ifa->ifa_flags & IFF_UP)) continue;
+        if (!iface_allowed(ifa->ifa_name, filter)) continue;
 
 #ifdef NM_DARWIN
         if (ifa->ifa_addr->sa_family == AF_LINK) {
@@ -83,6 +106,7 @@ int nm_iface_enumerate(nm_graph_t *g)
         if (!ifa->ifa_addr) continue;
         if (ifa->ifa_flags & IFF_LOOPBACK) continue;
         if (!(ifa->ifa_flags & IFF_UP)) continue;
+        if (!iface_allowed(ifa->ifa_name, filter)) continue;
 
         int family = ifa->ifa_addr->sa_family;
 

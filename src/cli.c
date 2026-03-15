@@ -49,6 +49,7 @@ void nm_cli_usage(const char *prog)
         "  -v                   Increase verbosity (-v to -vvvvv)\n"
         "  -o, --output FMT     Output formats: text,json,curses,png,mp4,html\n"
         "  -f, --file PATH      Output filename base (default: intranet)\n"
+        "  -i, --interface IF   Only use specified interface(s) (repeatable)\n"
         "  -4                   IPv4 only\n"
         "  -6                   IPv6 only\n"
         "  --no-mdns            Disable mDNS discovery\n"
@@ -84,6 +85,7 @@ int nm_cli_parse(nm_config_t *cfg, int argc, char **argv)
         {"fast",        no_argument,       NULL, 'F'},
         {"nameserver",  required_argument, NULL, 'n'},
         {"from-json",   required_argument, NULL, 'J'},
+        {"interface",   required_argument, NULL, 'i'},
         {"no-lldp",     no_argument,       NULL, 'L'},
         {"no-unifi",    no_argument,       NULL, 'U'},
         {"unifi-host",  required_argument, NULL, 1001},
@@ -101,11 +103,23 @@ int nm_cli_parse(nm_config_t *cfg, int argc, char **argv)
     /* Reset getopt for testability */
     optind = 1;
 
-    while ((opt = getopt_long(argc, argv, "vo:f:n:46h", long_opts, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "vi:o:f:n:46h", long_opts, NULL)) != -1) {
         switch (opt) {
         case 'v':
             v_count++;
             break;
+        case 'i': {
+            /* Append interface name to comma-separated filter list */
+            size_t cur = strlen(cfg->iface_filter);
+            if (cur > 0 && cur < sizeof(cfg->iface_filter) - 2) {
+                cfg->iface_filter[cur] = ',';
+                cur++;
+            }
+            strncpy(cfg->iface_filter + cur, optarg,
+                    sizeof(cfg->iface_filter) - cur - 1);
+            cfg->iface_filter[sizeof(cfg->iface_filter) - 1] = '\0';
+            break;
+        }
         case 'o': {
             unsigned int flags = parse_output_formats(optarg);
             if (flags == 0) return -1;
